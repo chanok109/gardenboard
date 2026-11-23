@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GardenBoard ม.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600&display=swap">
+<style>
+/* Layout: exhibition wall. Header with class facts → tool filter + search → grid of specimen-tag cards → lightbox viewer. */
+:root{
+  --bg:#F3F6EF; --paper:#FFFFFF; --ink:#1E3324; --muted:#5D6F60; --line:#D7E1D2;
+  --leaf:#2F7D4F; --bloom:#D6577A; --lav:#7B5FC7; --sun:#C98A12;
+  --mount:#EAF0E6; --shadow:0 1px 2px rgba(30,51,36,.06),0 8px 24px rgba(30,51,36,.08);
+  --f-head:"Prompt","Noto Sans Thai",system-ui,sans-serif;
+  --f-body:"Sarabun","Noto Sans Thai",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111A14; --paper:#18241B; --ink:#E6EFE6; --muted:#9DB0A0; --line:#2B3B2F;
+  --leaf:#6BCB8F; --bloom:#F08AA6; --lav:#B4A0F0; --sun:#E9B44C;
+  --mount:#0D150F; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#111A14; --paper:#18241B; --ink:#E6EFE6; --muted:#9DB0A0; --line:#2B3B2F;
+  --leaf:#6BCB8F; --bloom:#F08AA6; --lav:#B4A0F0; --sun:#E9B44C;
+  --mount:#0D150F; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35); color-scheme:dark;}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16.5px;line-height:1.6}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:var(--f-head);text-wrap:balance;margin:0;line-height:1.25}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--leaf);outline-offset:2px;border-radius:6px}
+
+/* header */
+header{padding:40px 0 0}
+.kicker{font-family:var(--f-head);font-weight:500;font-size:14px;color:var(--leaf);letter-spacing:.02em}
+h1{font-size:clamp(30px,4.4vw,46px);font-weight:700;margin-top:6px}
+h1 span{color:var(--bloom)}
+.lede{color:var(--muted);max-width:62ch;margin:10px 0 0}
+.facts{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:22px;font-variant-numeric:tabular-nums}
+.fact b{display:block;font-family:var(--f-head);font-size:26px;font-weight:600;line-height:1.1}
+.fact small{font-size:13.5px;color:var(--muted)}
+.fact.g b{color:var(--leaf)} .fact.c b{color:var(--lav)} .fact.v b{color:var(--bloom)} .fact.n b{color:var(--muted)}
+
+/* toolbar */
+.bar{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding-top:12px;padding-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 14px;font-family:var(--f-head);font-size:14px;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+.chip i{font-style:normal;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.chip[aria-pressed="true"] i{color:inherit;opacity:.75}
+.search{display:flex;align-items:center;gap:8px;background:var(--paper);border:1.5px solid var(--line);border-radius:999px;padding:4px 14px;min-width:220px;flex:0 1 280px}
+.search input{border:0;background:transparent;font:inherit;color:var(--ink);width:100%;padding:3px 0;outline:none}
+.search:focus-within{border-color:var(--leaf)}
+
+.rooms{display:flex;flex-wrap:wrap;gap:4px;margin-top:22px;border-bottom:1px solid var(--line)}
+.room{background:none;border:0;border-bottom:3px solid transparent;padding:8px 14px 9px;font-family:var(--f-head);font-size:15px;font-weight:500;color:var(--muted);cursor:pointer;margin-bottom:-1px;display:inline-flex;gap:6px;align-items:baseline}
+.room i{font-style:normal;font-size:12.5px;font-variant-numeric:tabular-nums}
+.room[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--leaf)}
+.tools{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.noimg{color:var(--muted);font-size:14px;text-align:center;padding:20px}
+/* grid */
+main{padding:26px 0 60px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:22px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;text-align:left;transition:transform .15s ease,box-shadow .15s ease}
+.card:has(.open:hover){transform:translateY(-2px);box-shadow:0 2px 4px rgba(30,51,36,.08),0 14px 34px rgba(30,51,36,.14)}
+.mount{aspect-ratio:16/10;background:var(--mount);display:grid;place-items:center;padding:10px;border-bottom:1px solid var(--line)}
+.mount img{max-width:100%;max-height:100%;object-fit:contain;display:block;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.tag{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 16px}
+.no{font-family:var(--f-head);font-weight:700;font-size:24px;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--leaf);color:var(--leaf);font-variant-numeric:tabular-nums}
+.who h3{font-size:16.5px;font-weight:600}
+.who small{color:var(--muted);font-size:13.5px}
+.tool{font-family:var(--f-head);font-size:12.5px;font-weight:500;padding:3px 10px;border-radius:999px;white-space:nowrap;border:1px solid currentColor}
+.t-Gemini{color:var(--leaf)} .t-ChatGPT{color:var(--lav)} .t-Canva{color:var(--bloom)} .t-none{color:var(--muted);border-style:dashed}
+.empty{padding:40px;text-align:center;color:var(--muted);border:1.5px dashed var(--line);border-radius:14px;display:none}
+.note{margin-top:30px;color:var(--muted);font-size:14.5px;border-top:1px solid var(--line);padding-top:16px}
+
+/* lightbox */
+dialog{border:0;padding:0;background:transparent;max-width:none;max-height:none;width:100%;height:100%}
+dialog::backdrop{background:rgba(8,14,10,.88)}
+.lb{height:100%;display:grid;grid-template-rows:auto 1fr auto;color:#EEF4EE}
+.lb-top,.lb-bot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;flex-wrap:wrap}
+.lb-top h2{font-size:18px;font-weight:600}
+.lb-top small{display:block;font-family:var(--f-body);font-size:13.5px;opacity:.75;font-weight:400}
+.lb-stage{display:grid;place-items:center;overflow:auto;padding:0 12px}
+.lb-stage img{max-width:100%;max-height:100%;object-fit:contain;background:#fff;border-radius:4px;cursor:zoom-in}
+.lb-stage.zoom{place-items:start center}
+.lb-stage.zoom img{max-width:none;max-height:none;width:min(200%,2048px);cursor:zoom-out}
+.ib{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:7px 16px;cursor:pointer;font-family:var(--f-head);font-size:14px;color:#EEF4EE;text-decoration:none;display:inline-flex;gap:6px;align-items:center}
+.ib:hover{background:rgba(255,255,255,.2)}
+.lb-bot .count{font-variant-numeric:tabular-nums;opacity:.75;font-size:14px}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.card:has(.open:hover){transform:none}}
+@media (max-width:520px){.search{flex:1 1 100%}.facts{gap:10px 20px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="wrap">
+  <div class="kicker">ว32281 ปัญญาประดิษฐ์เบื้องต้น · ใบงาน 1.2 AI Garden Designer</div>
+  <h1>นิทรรศการ Garden Board <span id="h-room">ม.5 ทุกห้อง</span></h1>
+  <p class="lede">ผลงานของนักเรียน ม.5/1–5/6 สวนที่นักเรียนถ่ายภาพจากสวนพฤกษศาสตร์ แล้วเขียน Prompt ให้ AI ออกแบบใหม่ โดยต้องมีต้นพุดซ้อนและต้นต้อยติ่ง พร้อมต้นไม้ที่เลือกเองอีก 2 ต้น แต่ละแผ่นแสดงสวนต้นฉบับ พันธุ์ไม้ และภาพจาก AI รอบ V1 และ V2 กดที่ผลงานเพื่อดูภาพใหญ่</p>
+  <div class="facts" id="facts"></div>
+  <div class="rooms" id="rooms" role="tablist" aria-label="เลือกห้อง"></div>
+ </div>
+</header>
+
+<div class="bar">
+ <div class="wrap">
+  <div class="chips" id="chips" role="group" aria-label="กรองตามเครื่องมือ AI"></div>
+  <label class="search" for="q">
+   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+   <input id="q" type="search" placeholder="ค้นหาชื่อหรือเลขที่" autocomplete="off">
+  </label>
+ </div>
+</div>
+
+<main>
+ <div class="wrap">
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty">ไม่พบผลงานที่ตรงกับคำค้น ลองล้างช่องค้นหาหรือเลือก "ทั้งหมด"</div>
+  <p class="note">ภาพในหน้านี้เป็นภาพตัวอย่างหน้าแรกของไฟล์ที่นักเรียนส่ง กด "เปิดไฟล์ต้นฉบับ" ในหน้าภาพใหญ่เพื่อดูไฟล์ความละเอียดเต็มใน Google Drive · ปุ่ม "ใบงานตอบคำถาม" เปิดไฟล์ Answers ของนักเรียนคนนั้นใน Google Drive · "ไม่ระบุ" หมายถึงนักเรียนไม่ได้เขียนชื่อเครื่องมือ AI ไว้บนแผ่นงาน · นักเรียนที่ใช้หลายเครื่องมือจะแสดงทุกเครื่องมือ และนับในทุกตัวกรองที่ตรง</p>
+ </div>
+</main>
+
+<dialog id="lb" aria-label="ภาพผลงานขนาดใหญ่">
+ <div class="lb">
+  <div class="lb-top">
+   <h2 id="lb-title"></h2>
+   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="ib" id="lb-ans" href="#" target="_blank" rel="noopener">ใบงานตอบคำถาม ↗</a>
+    <a class="ib" id="lb-src" href="#" target="_blank" rel="noopener">เปิดไฟล์ต้นฉบับ ↗</a>
+    <button class="ib" id="lb-close" type="button">ปิด ✕</button>
+   </div>
+  </div>
+  <div class="lb-stage" id="lb-stage"><img id="lb-img" alt=""></div>
+  <div class="lb-bot">
+   <button class="ib" id="lb-prev" type="button">← ก่อนหน้า</button>
+   <span class="count" id="lb-count"></span>
+   <button class="ib" id="lb-next" type="button">ถัดไป →</button>
+  </div>
+ </div>
+</dialog>
+
+<script>
+const W=[{"r":"501","no":2,"name":"นายจอมทัพ มาลารัตน์","tools":["Gemini"],"id":"1MuYNigfn48QX2PEFhzy5speK2qOh5tWa","img":"img/501_02.jpg","ans":"1TvfEw20YtZqP8S31ticSsW5_vuI9EN4K"},{"r":"501","no":3,"name":"นายจิรณัฐ ไชยแสน","tools":["Gemini"],"id":"1BLrLaw0NRZJkcDyoQ6aqF3e_o3feM9NA","img":"img/501_03.jpg","ans":"1PxK4Fx2Zzq3wmSlJDlHzRhMb5KswBuah"},{"r":"501","no":4,"name":"นายจิรเมธ มีสอน","tools":["ChatGPT"],"id":"1Rp1MFBSYlJ_UTGLHMAmmUEqhKuAL89IX","img":"img/501_04.jpg"},{"r":"501","no":5,"name":"นายณธรรม เรืองสินทรัพย์","tools":["Gemini"],"id":"17nzohsDyLg4spXr6Rnlac5yXHMBAqn7Y","img":"img/501_05.jpg","ans":"1TiSz_PhyYY4qggBbedqN87dVMhhHau9G"},{"r":"501","no":7,"name":"นายปกรณ์เกียรติ ชัยชุมภู","tools":["Gemini"],"id":"1XuNO90tTN4xiMbdaIVx0c65VVzedVF4l","img":"img/501_07.jpg","ans":"1ZKkA0Y4or78q2GbXedKmb1fFvjEv-go9"},{"r":"501","no":10,"name":"นายวรชัย องค์สุรกุล","tools":["Gemini"],"id":"1gGtSUaxgfZTYq_qZYHNGKbnnGDsECtRM","img":"img/501_10.jpg","ans":"18noAppDjCfDWwB0Aj2rDcogKg43rYxff"},{"r":"501","no":12,"name":"นายศุภวิชญ์ ถาปะนา","tools":["Gemini"],"id":"1pEjwGHjVGedjeFakuHFEC-H3xvIklkgZ","img":"img/501_12.jpg","ans":"18GFBF0R08s7Tjw91HPq1A9R_vsCKQcZ9"},{"r":"501","no":16,"name":"นายวรพรต เขื่อนแก้ว","tools":["ChatGPT"],"id":"1B_B3Nn9hiS3GdBBqnvq31d--Ejn3NvRo","img":"img/501_16.jpg","ans":"1o3Y_wAjQNhQps4px52l3uslU2yK3drPO"},{"r":"501","no":19,"name":"นางสาวพัณพิรศาร บุญเติม","tools":["Gemini"],"id":"1H-RRcCKfeY1vDF5rQkXp9pJ5kI8V-oY7","img":"img/501_19.jpg","ans":"1qhKY6dImewbujWZMrvb0NBF6MevKPfTv"},{"r":"501","no":20,"name":"นางสาวพิชชาภา ศรีกันธา","tools":["Gemini"],"id":"1jCbxM5fX-uPn-V62nq22CdNvQlGUYfye","img":"img/501_20.jpg","ans":"1uVo3cnf_izx3gLy655FAaNCUaqwXGpwM"},{"r":"501","no":21,"name":"นางสาวธัญวรัตม์ มโนการ","tools":["ChatGPT","Gemini"],"id":"1PM5VtOAjPSWaWn5A2tJRg5uAViHJNv_H","img":"img/501_21.jpg","ans":"1Rf_lHd8L7WXV18GBKln_VYZ-wLa_lubA"},{"r":"501","no":22,"name":"นางสาวไปรยา แก้วหล้า","tools":["Gemini"],"id":"1O24ufyMBBpCrRvurgejju8CCfLhvbmr0","img":"img/501_22.jpg","ans":"1EZBFVi99400x_bEXgmiKqWLijJ9M8-yI"},{"r":"502","no":3,"name":"นายฉัตรมณฑล สะสาง","tools":["Gemini"],"id":"1mY4m_kk3WsY2RZBxeC-Kpa7eHfrcBrYc","img":"img/502_03.jpg","ans":"1ugEUFm4JlL1SVLd0-kSo8BPs_nwf1cUm"},{"r":"502","no":4,"name":"นายภาคิน บุตดาวงศ์","tools":["Gemini"],"id":"1laCzvNRKn-2yk14j_LxUqMh2uKd8Bm3a","img":"img/502_04.jpg","ans":"1xW999GyqhowJR3E2mvseTePW1HobLBXI"},{"r":"502","no":5,"name":"นายศุภฤต สายยืด","tools":["Gemini"],"id":"1O-DLtegAHropBHHjnhl0Bf7C6A-Uv7mo","img":"img/502_05.jpg","ans":"1N70L7ubpP8jGHZ7OumdOhjjc3vx5rqVK"},{"r":"502","no":8,"name":"นายบูรณศักดิ์ พรหมเรืองฤทธิ์","tools":["Gemini"],"id":"1NJX5u1I7Mp-4DwtHjHuzaC7THsoON7rz","img":"img/502_08.jpg","ans":"1BD7WeFsMWVjbIeh-7Xy7ZONsjzW9DTHf"},{"r":"502","no":11,"name":"อำนาจศักดิ์ สีดามาตร","tools":["Gemini"],"id":"18tzKbXDPz4aGYHf53-eJdB6ZC8ne81lX","img":"img/502_11.jpg","ans":"1xxrPtHCWNonwK0zFOlUwMlLmitMJ0Q8b"},{"r":"502","no":12,"name":"นางสาวกิจศญาภรณ์ บุญประเสริฐ","tools":["ChatGPT"],"id":"1cmhrMLHdUZncrD8mDvZo5FMJWPHN_Xzr","img":"img/502_12.jpg","ans":"1ExrPngqtmVsimWu81GsWSFwEOOyAf_yq"},{"r":"502","no":14,"name":"นางสาวนวพรพรรณ ชาญทวีศรีสุข","tools":["Gemini"],"id":"1Nn2zpHnBsuiJP2N9r36WamMRh6_3P5Ap","img":"img/502_14.jpg","ans":"1FsR_R_ZoMwSR2eUg95cW-fI1XTw3QUwq"},{"r":"502","no":15,"name":"พิชญาวี วันดี","tools":[],"id":"1V-uunS12MkvkRCzIOn3YymiTH5pX6sKm","img":"img/502_15.jpg","ans":"1mXWINejvQ237C-8bmKEcnwt5PKXCQVu-"},{"r":"502","no":16,"name":"นางสาวภัทราวดี พันกาศ","tools":["Gemini"],"id":"1GyFu8UzzwIoiU4Sy9uwtDjZmOnYqXDnS","img":"img/502_16.jpg","ans":"1aEfuyDNFgn17XUd0kOkkA2WkvG_1K9zp"},{"r":"502","no":17,"name":"นางสาวกนกวรรณ จันเพชร","tools":["Gemini"],"id":"1zLvH1bom4fT1b8vLm-2q-2FomlVM4Agi","img":"img/502_17.jpg","ans":"1z1fAnZj9HxRKcGKsG9xchyNGOSkPvOyh"},{"r":"502","no":19,"name":"(ไม่ได้เขียนชื่อบนแผ่นงาน)","tools":[],"id":"1m2shxjmVeA96tTkXRPqaW67dPlJDCGFW","img":"img/502_19.jpg","ans":"1Jq3-dSYLudcoDSWRfbkTYIfvBJqeW7_z"},{"r":"502","no":20,"name":"เกสรา สารเก่ง","tools":[],"id":"19w4f5fIQxcKfg5uhf-Mmy973YzzbQ2as","img":"img/502_20.jpg","ans":"1LWtS53ip3c0qCO7RPgT9c6ihLwhk6DaT"},{"r":"502","no":21,"name":"นางสาวจารุพิชญา หลาบคำ","tools":["ChatGPT"],"id":"1qFBYxRyreFGEVM0fknMdcKfaC5soRbYC","img":"img/502_21.jpg","ans":"1KdDBR8-64d0duE2anreMgNJKr9VcKL0O"},{"r":"502","no":22,"name":"นางสาวชยาภรณ์ วงศ์ชัย","tools":["ChatGPT"],"id":"1_9y4k-zMghSPvZBqWiaO2e7r_R4qhEqh","img":"img/502_22.jpg","ans":"1EhyxQpjqNCm-JLjWU-PYWKn8n7UFy46T"},{"r":"502","no":23,"name":"นางสาวณิชชา ยกสุวรรณ","tools":["Gemini"],"id":"1ayEMUYJ_J4C7ATJ6LiHK6JveLR7wWul4","img":"img/502_23.jpg","ans":"1qsOdpd6yEWwHj5nSzGvye7p3cwQjGzJq"},{"r":"502","no":24,"name":"นางสาวภัควิภา พุทธวงค์","tools":["Gemini"],"id":"1737h44dxE6iMzyig32cox6huE0X_MhF7","img":"img/502_24.jpg","ans":"1mn-m8DKVAPKjBzf6ayfg6qLSiAfexEwZ"},{"r":"503","no":2,"name":"นายพรรษชล น้อยศรี","tools":["Gemini"],"id":"1bsdxvSszgYrQAtmaC0gcAauffp8jcFbL","img":"img/503_02.jpg","ans":"1Jp-2GkazSLytM7PuhziOHlnPTKBzYyQx"},{"r":"503","no":3,"name":"นายภัทรพล เมืองคำ","tools":["Gemini"],"id":"1OeE3xHc2HI4GTkJ-z7AWcz9r_aSm4U-G","img":"img/503_03.jpg","ans":"1YQXdm47SWE7bS3fvspod9XxyWwFEZnEv"},{"r":"503","no":4,"name":"นายดวิษทัพพ์ แซ่ว่ะ","tools":["Gemini"],"id":"1kGJCoiP2h2lwRNub-J3a7dtGDd3Ie609","img":"img/503_04.jpg","ans":"18y4JuSMCid148LO9lmm4492JxcJ1GdHX"},{"r":"503","no":5,"name":"นายธนาคาร อึ้งฮก","tools":["ChatGPT"],"id":"14MdKse9m27MM5Ar2nS_nKXI4DJw0yXGV","img":"img/503_05.jpg","ans":"1qUvF8L6lYNpSLu9ZrCwEoWPtrmQ0oICJ"},{"r":"503","no":6,"name":"นายพัชรพล ชญานินรุ่งโรจน์","tools":[],"id":"1ljTjKLYO1S0_-dbltzPMMOlwlyNyXX-N","img":"img/503_06.jpg","ans":"1brXupCZiuEIooqdguzVSaIXLojMnzXk1"},{"r":"503","no":7,"name":"นายภีมเดช เขื่อนแก้ว","tools":["Gemini"],"id":"1abIX8uZpBsu2lI1qik20SegpkVrx-n26","img":"img/503_07.jpg","ans":"11xwbMv5zihdCsi7C_76VvWhNP9_EiPvN"},{"r":"503","no":8,"name":"นายศุภกร ประมะวิชัย","tools":["Gemini"],"id":"1DgpEbRHfeY6g4k-eC3FoWwPMKKV_qfCg","img":"img/503_08.jpg","ans":"1xXkhm17k-miGJZzbqh0UOBYkhfXvvdMB"},{"r":"503","no":9,"name":"ศุภณัฐ ชุ่มวงค์","tools":["ChatGPT"],"id":"1b7-5EFqf3hpqGQzIfmZeifJUyOL_qdoD","img":"img/503_09.jpg","ans":"11Uds1DuSijOJX09M7XVzV3t6kcHbLNVE"},{"r":"503","no":10,"name":"นายออมทรัพย์ เปทา","tools":["Gemini"],"id":"1JsNOdWj4_XN3zh0wcn7K5YowdRqFnNq9","img":"img/503_10.jpg","ans":"18m8GSjq0Os4kteIaMQDjxrzfPDHVlKMe"},{"r":"503","no":11,"name":"นางสาวณธิดา ตุ้ยหล้า","tools":["ChatGPT"],"id":"13XHirjI5Bef9kqIgKd8WkukNgqbu4YQn","img":"img/503_11.jpg","ans":"1_ncKJMk6aZFjs7bli-ND1eBtoEWXM0fb"},{"r":"503","no":13,"name":"นางสาววรัญญานันท์ วิชัยนำโชค","tools":["Gemini"],"id":"1_t9mHSSi7NEo3eU8LPWLCtQ32t0D6B4g","img":"img/503_13.jpg","ans":"1W4rTzYFOSge661oqvnW4w0_zde5mjXKv"},{"r":"503","no":14,"name":"นางสาวกรัณฑรัตน์ คำผัด","tools":["Gemini"],"id":"12zPMIfY3kaLmgvJ1vfzdKwk7VcvKO9Ly","img":"img/503_14.jpg","ans":"1U6NZc94Goj2AFvfriXP7oLyaw449gBdu"},{"r":"503","no":15,"name":"นางสาวขวัญน้ำ น้อยปิ่น","tools":["Gemini"],"id":"1ycCBfJI-GczlxLclJLHYEAOWo4gY1AX_","img":"img/503_15.jpg","ans":"12ZoftYoGyDw2mylCmqdsCNLurILToW0m"},{"r":"503","no":16,"name":"นางสาวจิรดา วงศ์กองแก้ว","tools":["Gemini"],"id":"1LNjgG5RabQXbXBIaFnVzE60ybxgJymnk","img":"img/503_16.jpg","ans":"1CPbdHa7cBqMKBYNTjaULdnZq-iO7eXFX"},{"r":"503","no":17,"name":"นางสาวปนัดดา หาญยุทธ","tools":["Gemini"],"id":"1p1y7i_9Jg6y7goa8puiR8uoX1ESfePYP","img":"img/503_17.jpg","ans":"1B69TGGtZAlpqBxAIzvVIAR4wypAIHJwR"},{"r":"503","no":18,"name":"นางสาวปิยาภรณ์ ตันวุฒิ","tools":["Gemini"],"id":"1iWpcR2pJ4-8B83x2-wCdrTiV4LqUJqvp","img":"img/503_18.jpg","ans":"15crCWZi-oyI-ulvXXyFcsdR9fA6p9omC"},{"r":"503","no":19,"name":"นางสาวพิชญาพร วงค์ตึ๊บ","tools":["ChatGPT"],"id":"1EDb3UcYxR9jGH_2Y_8BpMd1i8VglRGbQ","img":"img/503_19.jpg","ans":"12Q5hacy-PR0qHKnmetkRH8cWIgQb56iP"},{"r":"503","no":20,"name":"นางสาวรัตนลักษณ์ อินปา","tools":["ChatGPT"],"id":"1e11HJf734aoXoV0vgvHZWajqaebqs5lm","img":"img/503_20.jpg","ans":"1ktKFD_3J0aXE8Zq3ti34utZ6WbV-N4IG"},{"r":"503","no":21,"name":"นางสาวศุภสุตา ปัญญาปิง","tools":["Gemini"],"id":"1aWdMYQuCso6N22mMm9bAIFIG3db_407S","img":"img/503_21.jpg","ans":"1fFCv6RKFEw1g8-hbrMLZvXiCRCK721NP"},{"r":"503","no":22,"name":"นางสาวสุภชภา นันทพิฎฐ์","tools":["Gemini"],"id":"1URdqC4VPTLOkAiVdRTtqIFJmQDEBHwpn","img":"img/503_22.jpg","ans":"1ObLkzaFzGQqMRRBsKdOzyR5ugml-95k2"},{"r":"503","no":23,"name":"นางสาวโสวิชญา ใจเอื้อน","tools":[],"id":"1XEqB-TovlDJLd0EucZFrPWVXqcalg69y","img":"img/503_23.jpg","ans":"1pejD4eVwc7LsMn2kkpSB8tgi-o_LqCUh"},{"r":"503","no":24,"name":"นางสาวอาทิตยาพร ธรรมวงศ์","tools":["Gemini"],"id":"1yD2G3HvC832camzGevGCxdvQl-KT1pSm","img":"img/503_24.jpg","ans":"1lsRz_lu5Ss3lMMs8UL31XBjPDkBQCX_T"},{"r":"504","no":1,"name":"กิตติณัฏฐ์ ฐิติพิชญานันท์","tools":[],"id":"1XjNjTjcoSgLjDcXdGSfW-b6Rb6BvB5AF","img":"img/504_01.jpg","ans":"1utn_1jg8QPl5dJESBL3O5oDeVuOXatMB"},{"r":"504","no":2,"name":"นายขิณณวัตร ใจจูมปา","tools":["ChatGPT"],"id":"1NDx2GjPXiNbzeRwnYzT1kkrEG57WzFEL","img":"img/504_02.jpg","ans":"1bCzotrG3_8uocxhfSIWnk2cUzWEuR7LJ"},{"r":"504","no":3,"name":"พงศภัค พรรคนา","tools":["ChatGPT"],"id":"1NA8l0gaTSXIWqD3Vhcw-mxGoag6JD9Ph","img":"img/504_03.jpg","ans":"1Duf7_IKCL9JmruYvFZVjgq9mBP8oQwxT"},{"r":"504","no":4,"name":"นายศุภกิตติ์ ยวงจา","tools":[],"id":"14iBq2f99W-V7MElu_e2ROuGG5VP18Vtg","img":"img/504_04.jpg","ans":"1a3QMRhE8JCGhLHnIcRmpPIjbUJ-lom6c"},{"r":"504","no":6,"name":"นายจตุพร ประยูรคำ","tools":["Gemini"],"id":"1d5KXL5NCeS9i6oeoyFHldiN-zSogSl95","img":"img/504_06.jpg","ans":"1nVRoTgVhylXtecZfZCD2H23VEX97NGp8"},{"r":"504","no":7,"name":"นายจิรวัตร ประภาศรีสกุล","tools":[],"id":"16UbB9jAi_xyVFX0jy_Ux3qpmVhwa-OkV","img":"img/504_07.jpg","ans":"1PRRBLvNXKfxQuMjlAJwqrJv4eiaWHHjD"},{"r":"504","no":8,"name":"นายชณาธิป กำปั่น","tools":["Gemini","ChatGPT"],"id":"1FVtWRL3WpP0zw2KmMagXCPPNsakODzqp","img":"img/504_08.jpg","ans":"1iq4VdHaYogVUfqe-OYpy6apzpIjqsPXx"},{"r":"504","no":9,"name":"นายธิติทรัพย์ สุริยะ","tools":["ChatGPT"],"id":"1iCe-M88cft3zP5_DfTuHrCjAlMG-PXSq","img":"img/504_09.jpg","ans":"1GaOicC0zzeCPK3LGt_MGyjvXR2_uEsix"},{"r":"504","no":10,"name":"นายวชิรวิทย์ แถวบุญตา","tools":["Canva"],"id":"109NwdGXxi28xiezNEZs-LOPUT1d4S5XC","img":"img/504_10.jpg","ans":"1TjrwZYYFB-2ikQtwjrZpb7ClguRljDQM"},{"r":"504","no":11,"name":"นางสาวณัฏฐณิชา ไวสาริกรรม","tools":["ChatGPT"],"id":"1C0eEE-bnGBXepjRLVdI843gsaovv56q6","img":"img/504_11.jpg","ans":"1GPXx5mU5fHFwD4MhOuKCoZIArGiYehiL"},{"r":"504","no":12,"name":"นางสาวธัญจิรา พงศาสกุลโชติ","tools":["Gemini"],"id":"1BRH2t3GjdJOF_yM3fbxT6KvNdavCjrEz","img":"img/504_12.jpg","ans":"1PJxuc-hBqnQzxjMk1TxlnmTUnI9EIKec"},{"r":"504","no":13,"name":"(ดูชื่อในไฟล์ต้นฉบับ)","tools":[],"id":"18M6dCObcdQXIS5eyikOL2Hz0B8jv3KG2","img":"","ans":"1eugcdj70MY9lvuZE3HqOwTsXVHl9SWpW"},{"r":"504","no":14,"name":"นางสาวปริชญา ใหม่จักร์ตา","tools":["ChatGPT"],"id":"1gJx7im5XVbrlQfljGGbP0Yk9mgEvSAj4","img":"img/504_14.jpg","ans":"1Wg6xpNcsiMLd-ohUhFYSvZK4XpcaM6tV"},{"r":"504","no":15,"name":"(ไม่ได้เขียนชื่อบนแผ่นงาน)","tools":[],"id":"1f1UwOMEmJF6DYqia6JtovlpQa629kgaa","img":"img/504_15.jpg","ans":"13iSeRNrkn67HTyAXH7bCHj4nIguhZaFV"},{"r":"504","no":16,"name":"นางสาวกันตธิดา หลงมะลิ","tools":["Gemini"],"id":"1A4Me8xJ-RHEq5BjdTbO4-0GZAfvdxO04","img":"img/504_16.jpg","ans":"1oFpJme6giH6HkXruSpvDPaYpCluApLHg"},{"r":"504","no":17,"name":"นางสาวจรรยมณฑน์ ใบไม้","tools":["ChatGPT","Canva"],"id":"1NfCA337_3Y15KfvOy5PcTiTYGegzNlFH","img":"img/504_17.jpg","ans":"1cfC7Gh65h6cXtG7WoqaOrYFOlwliMiC5"},{"r":"504","no":18,"name":"นางสาวณิชา แซ่เซิ่น","tools":["ChatGPT"],"id":"1nMur2k8Vgo7fvJcPQBHKsNlBdeXuo28N","img":"img/504_18.jpg","ans":"1h7I3fY96SVmfy9mC8IU6P-9BZvgtL9oB"},{"r":"504","no":19,"name":"นางสาวนภัสสร ธิทะ","tools":["Canva"],"id":"1rnmnHgDijuhCqa33kgZpM_FZs6kTmTX0","img":"img/504_19.jpg","ans":"11kjhcD72X3Gt7M9Lg_OQBgQvJkmDtvf6"},{"r":"504","no":20,"name":"นางสาวปรัชญาพร คราพันธุ์","tools":["ChatGPT"],"id":"12JWjQBwf5dQy-Trl9-Jbw2QS4iMiJv3y","img":"img/504_20.jpg","ans":"1OuovboQXwumLsSCou0cofjWPAYyJZXnp"},{"r":"504","no":21,"name":"นางสาวพิชญาวรา วงค์วณิชย์","tools":["ChatGPT"],"id":"1ztqzautXePhmIQATZ0zj8q5DqcwoPoXr","img":"img/504_21.jpg","ans":"1e12aexBjRZMcfHoH22iz7mkCk4igxoaz"},{"r":"504","no":22,"name":"นางสาวภัทรนันท์ วงศ์ใหญ่","tools":["ChatGPT"],"id":"1DpYP6leO-kP1euMa56UTIxZm5JZGwNWU","img":"img/504_22.jpg","ans":"1nZ-6GvnktO7CA-juWTMCoqpbhTfXeH_t"},{"r":"504","no":23,"name":"นางสาวอริญชญา ธะณะแก้ว","tools":[],"id":"1sdJdbMZ-z-8Kko5WoYcTcVl1CuvSbWPK","img":"img/504_23.jpg","ans":"1966CXGEXHGBYj3LN0zVVtf4yHv5bQI1t"},{"r":"504","no":24,"name":"นางสาวอุรชา จักรใจวงศ์","tools":[],"id":"11KC3WxKxnkwZDB57CYO2-dr84JaFWiHX","img":"img/504_24.jpg","ans":"1YnTTUN4hQl0llPcxHPqGY2IQGOdGaETb"},{"r":"505","no":1,"name":"นายธนโชติ สารคาม","tools":["Gemini","ChatGPT"],"id":"1Em9Nfi0zbN079vV1LfZyA0pw9EYYzWEC","img":"img/505_01.jpg","ans":"1BrtWu4dYSg-Y55bAUvFPfisMebGwQE1D"},{"r":"505","no":2,"name":"นายธีรเทพ ปวงคำ","tools":["Gemini"],"id":"1qzYwYERkVNa1gi9Rx1TdB5YN-kisOPA9","img":"img/505_02.jpg","ans":"1s5rVzLNxlpnTzxjUVPxk1vTZ-Wo6mja0"},{"r":"505","no":3,"name":"นายกรวิชญ์ เชยบาล","tools":["Gemini","ChatGPT"],"id":"1GgAeGtkzWcOfL4SG96xOj-V1gp0T6aty","img":"img/505_03.jpg","ans":"1dLWk20Ze6Z3DnGJuu9pClSpZIOBQN5dN"},{"r":"505","no":4,"name":"นายณกฤตตรีกูล เพชรดง","tools":["ChatGPT","Gemini"],"id":"1tjOtMgxprXvOqME7huUumB4OADUVBX5J","img":"img/505_04.jpg","ans":"1wtx_PJ7FpcHgowVzBw__uS65vL5hUYGH"},{"r":"505","no":5,"name":"นายศิรภัทร วงค์คำ","tools":["Gemini"],"id":"1nCh0Z20LiAtVfVG4pHQlFT3JdSRLTnEf","img":"img/505_05.jpg","ans":"1SugG2TXdZYkzYklRZVI0DnNAAzAAWgV8"},{"r":"505","no":6,"name":"นายวิชญะ จ้อยจุ้ย","tools":["Gemini"],"id":"188AC2EgrSurj0dFpqQoea5JHRO1HDn3q","img":"img/505_06.jpg","ans":"1joACRxQlzEQ1aWPDMxSZ7tdCOfiK_Q-P"},{"r":"505","no":7,"name":"นางสาวกานต์ชนิต มูลสุข","tools":["Gemini"],"id":"1LtZ1zL2PD1P0sWaAnmBE2-V0-HCjmUZQ","img":"img/505_07.jpg","ans":"1Cp-CLQ6chiPDP7B33kYQYnDZxgSp-JI6"},{"r":"505","no":8,"name":"นางสาวจิตรางคนางค์ มนตรีวัฒนากุล","tools":["Gemini"],"id":"1ubF6bVLq0rhubzadE7wnlTZp3Mgj1VNT","img":"img/505_08.jpg","ans":"1ccpYREpotZyg1AtbGMRDJ-ck0FE5N0Ba"},{"r":"505","no":9,"name":"นางสาวณัฐวดี เค้ามูล","tools":["ChatGPT"],"id":"1gbHyb5iPB_6rAA3mWINnozHVCwyFH3Cw","img":"img/505_09.jpg","ans":"1cuXuBU0wFb7N489KX6vMogImTcEb25ao"},{"r":"505","no":10,"name":"นางสาวพลอยขวัญ สภูยศ","tools":["ChatGPT"],"id":"1pZKXr8NO8jCmGXPFTGsrLQd0INOMNGQb","img":"img/505_10.jpg","ans":"1WoBP6yZAv1_qQL2FYz7BlaaasTq0AY0K"},{"r":"505","no":11,"name":"นางสาวกชวรรณ ธรรมา","tools":["Gemini"],"id":"1rJBLyNwFai6zD-IT5Pc0fyFYAuzZUe4M","img":"img/505_11.jpg","ans":"1JFlQOVDqLd9OoNW_TomrQCHxcyP12CLx"},{"r":"505","no":12,"name":"นางสาวกัญญานาถ พูลหน่าย","tools":["Gemini"],"id":"1FdHslFDSoGp9p3KvqfRV64Lx50Fz7d3B","img":"img/505_12.jpg","ans":"1pVHus45CmXrATARctMnjpEeyYdr__6Aj"},{"r":"505","no":13,"name":"นางสาวชญานุช ธุปะละ","tools":["ChatGPT"],"id":"1Zil8Doy8tftkSmUQJ2ssxQs7UIEPLPH8","img":"img/505_13.jpg","ans":"1mj593bnTQ1WXQ5d0UM9gQo-n5XLI0nWP"},{"r":"505","no":14,"name":"นางสาวณัฏฐธิดา แสนทะนุ","tools":["ChatGPT"],"id":"1kph6txY8ccGby-dQES94Fw1S8JtnOZGr","img":"img/505_14.jpg","ans":"1nseEB3ktjJg-ohrzZyUxzbSz6bmhbm6b"},{"r":"505","no":15,"name":"นางสาวณิศวรา เงินอยู่","tools":["ChatGPT"],"id":"1M4r_aLhFwlZ57HFhXvh4wBfNCi2uJxSt","img":"img/505_15.jpg"},{"r":"505","no":16,"name":"นางสาวทนันท์ยา เทียนอำไพ","tools":["ChatGPT"],"id":"1ZzV3vsYYUFNzUYgKw37g9T9LvEvsz1kh","img":"img/505_16.jpg","ans":"1DxyMbIcJfCev2-dlGTSPXudlX0UggAzp"},{"r":"505","no":17,"name":"นางสาวพิมพ์พิชชา เบียเซกู่","tools":["ChatGPT"],"id":"1IdvxsxrBQb0pzBKqRcKStC4EFUc9GEJ3","img":"img/505_17.jpg","ans":"1chEq-l7nlNDCAQUJ3t5nDOjMUTSHp9xg"},{"r":"505","no":18,"name":"นางสาวภัทรนิดา คีรีนครา","tools":["ChatGPT"],"id":"1nFGJTNeiUbTw_cVVqGW75cAt2PnB_mJW","img":"img/505_18.jpg","ans":"17nu5J0HaU3nwo9AYkIQd-q1RK6t-Mjoo"},{"r":"505","no":19,"name":"นางสาวมณฑิรา สระสวย","tools":["ChatGPT"],"id":"1DG4qD1lKZLmAjV2-mEpvjpTYoyGw5Iyx","img":"img/505_19.jpg","ans":"1D3e7yfZON59hjDvZmzivvmaQC1riyfwz"},{"r":"505","no":20,"name":"รชพร วรรณชยพล","tools":[],"id":"1E-5DnIg5lUdVE9Z4tCnVdEknTzxkjFsf","img":"img/505_20.jpg","ans":"1Ml-_4SArw9Gq43d6GIiQSR34nfkftjJ8"},{"r":"505","no":21,"name":"นางสาวลภัสวรรณ เกษโพธิ์แก้ว","tools":["ChatGPT"],"id":"1zOIy8S0LWoKfRmL_1z1WI45wu-MTvBQF","img":"img/505_21.jpg","ans":"1vxMYLou6eh1KWZoSJSVxt_UvcSdlB4Er"},{"r":"505","no":22,"name":"นางสาววิภาวนันท์ เหล่าหล้า","tools":["ChatGPT"],"id":"1bMFNTblo-4GJX5bg4gMGA-j4wdMMcdRB","img":"img/505_22.jpg","ans":"154ejLFVsV4_JKPqCh5ADO-RMf-zyle-4"},{"r":"505","no":24,"name":"นางสาวสุรภา คำอ้าย","tools":["ChatGPT"],"id":"139WNmUMkGw6bNKr7KDFOYNzMTY1uOjPQ","img":"img/505_24.jpg","ans":"1HdEMt9gAEIM-B__dlFlJJYEYguaLyl5a"},{"r":"506","no":2,"name":"นายปิยะพัฒน์ ดำพวง","tools":["Gemini"],"id":"1ox-VNEJDh-qbjM4pECaTZp98DE3J9iAD","img":"img/506_02.jpg","ans":"1cM7XdqZQoZH8KtyR2_12ODYEQD4PQTFj"},{"r":"506","no":3,"name":"นายพชร ก้อมมณี","tools":["Gemini"],"id":"1VlrYf5AlsKRlItZoOeR9OQpxRxvRkwW2","img":"img/506_03.jpg","ans":"1Z2lSBWuIPoJ4OFXa6S4Uix9hmsxAbHR0"},{"r":"506","no":5,"name":"นายพูทราย วงศ์ชัย","tools":["Gemini"],"id":"1mfuF2jUhj0LBciZUS3xH2JrOfRRv6uG5","img":"img/506_05.jpg","ans":"1Wu2_5mvg2aKHi-z2jMP_kyiUsFTvWZzE"},{"r":"506","no":6,"name":"นายศิรวิทย์ มุ่งตรง","tools":["ChatGPT"],"id":"17uBPExvJnGjTvmCnHzqKm5T_o1FIydk1","img":"img/506_06.jpg","ans":"1pv_2CXxPwUER9VGqK6vW-jn2PTY6EPmG"},{"r":"506","no":7,"name":"นายอัครพล แยลูกู","tools":["Gemini"],"id":"1tlkXncBaqJCsTssfiFQmR4Zzzksp1UQT","img":"img/506_07.jpg","ans":"1Vqoh5L6D1W0H1n8ZDrf_Ft9MZuFRHWcX"},{"r":"506","no":8,"name":"นางสาวพัทธ์ธีรา กิติ","tools":["ChatGPT"],"id":"1rf3dzTgShKtwoEfvX8SrUudzDUjldZA-","img":"img/506_08.jpg","ans":"1uSbL-wXfpfhyinWpGq-1XPjl3qSEj4IW"},{"r":"506","no":9,"name":"นางสาวอรภัส โฮชิน","tools":[],"id":"1GpUOavSKdr0wQbpdAbZar3iVdfX4FJ58","img":"img/506_09.jpg","ans":"1QQjKrfACv4eptWrvslyHd_JJP3n9Uop0"},{"r":"506","no":10,"name":"นางสาวจารุกัญญ์ ช่อสม","tools":["Gemini"],"id":"1E4QxzB_XJryreQKdD7G1JfC5SQxHMNap","img":"img/506_10.jpg","ans":"1rbN5xzkxJqNYoR_etPrhph_o1HM93Y6A"},{"r":"506","no":11,"name":"นางสาวชยุตา มะลิซ้อน","tools":["ChatGPT"],"id":"1ImnRbP4NZMjMp09kHSjnHqz3nBCUT829","img":"img/506_11.jpg","ans":"1-oMlWKmAk43pBl50VltJMtVshv50SNLi"},{"r":"506","no":12,"name":"นางสาวณฐพร ต๊ะอ๊อด","tools":["ChatGPT"],"id":"1HLI3kxMnnIt36x5uNgURH3u1yfxru4Pb","img":"img/506_12.jpg","ans":"1RIXTKKALIx90JNp4X4_FQzGlRKftYk8I"},{"r":"506","no":13,"name":"นางสาวนันทิกาญจน์ สุวรรณโณ","tools":["ChatGPT"],"id":"1zNZ1HLQ17J7INh4pyXOfy4B0lRJKC30i","img":"img/506_13.jpg","ans":"1PPNp-PYZV8xH1hsnN3-xbhEg5hlRHsUi"},{"r":"506","no":14,"name":"นางสาวนาริยา นารี","tools":["Canva"],"id":"1vdntBB_PNOFaZtFHD3emOE4U_51t1Yqg","img":"img/506_14.jpg","ans":"1G-rNLzHoKTg3ABfImYdv5i-6acfW5CoS"},{"r":"506","no":16,"name":"นางสาวบุญยวีร์ ยอดพังเทียม","tools":[],"id":"1arDi5pAOt_iUTkLHZo0yO2UkBAz_4Lbh","img":"img/506_16.jpg","ans":"1CHhEMPmx7ZgTxa-NR3M7vUZieWOXi7zo"},{"r":"506","no":18,"name":"นางสาวพนัสกร ปัญญาปิน","tools":["Canva"],"id":"1iw3G4_6vsz4w-q4E7LpARCWBZ9jUPWxx","img":"img/506_18.jpg","ans":"1ftp4RCQK9pjq0_3f7bl7y5QVD677THkC"},{"r":"506","no":19,"name":"นางสาววริศรา ภิญโญ","tools":[],"id":"1S_jk00DCjxhw0cbLToUtqOzzuSubtt4S","img":"img/506_19.jpg","ans":"1vavJxwYsoz0L2j2L7nwPMdma5OFKjz7V"},{"r":"506","no":21,"name":"นางสาวสุชาวดี โมกขะศักดิ์","tools":["Gemini"],"id":"1DGlY5QTTlk_PhWjxqOu_yeXvPGENizv6","img":"img/506_21.jpg","ans":"1gMYIMiFBf8VfHFJn1JOmeyJlligYQMId"},{"r":"506","no":22,"name":"นางสาวสุนันดา แต้จิ๋ว","tools":["ChatGPT"],"id":"1ETA_g40gttbaF_1IMQS8_RNAza5MBvwe","img":"img/506_22.jpg","ans":"1OdG-ECZafPalzsd-oa4DLKXhQcMTrX8G"},{"r":"506","no":23,"name":"นางสาวสุภัสสร นาคเอี่ยม","tools":["ChatGPT"],"id":"1phh38yr_CIGJFwrkS6q3rWafixRk6xP6","img":"img/506_23.jpg","ans":"1LlT6qOZJm7Pw3-evQuYtFcwFqzqsAfTb"},{"r":"506","no":24,"name":"นางสาวอัญรินทร์ ปันถา","tools":[],"id":"1MuHHE-nNr3RLToPE2lSh8zvtFDR_RKBs","img":"img/506_24.jpg","ans":"1PJixNsZp-Ifup-6w3T5SYB14o3Wgvlnq"}];
+const ROOMS=["501","502","503","504","505","506"];
+const rl=r=>"ม.5/"+r.slice(2);
+const toolLabel=t=>t.length?t.join(" + "):"ไม่ระบุ";
+const TOOLS=[["all","ทั้งหมด"],["Gemini","Gemini"],["ChatGPT","ChatGPT"],["Canva","Canva"],["none","ไม่ระบุ"]];
+let room="all",filt="all",q="",view=[];
+const inRoom=()=>room==="all"?W:W.filter(w=>w.r===room);
+const hasTool=(w,t)=>t==="all"||(t==="none"?!w.tools.length:w.tools.includes(t));
+const count=(list,t)=>list.filter(w=>hasTool(w,t)).length;
+
+const roomsEl=document.getElementById("rooms");
+roomsEl.innerHTML=[["all","ทุกห้อง"],...ROOMS.map(r=>[r,rl(r)])].map(([k,l])=>`<button class="room" type="button" role="tab" id="tab-${k}" data-r="${k}" aria-selected="${k==="all"}">${l} <i>${k==="all"?W.length:W.filter(w=>w.r===k).length}</i></button>`).join("");
+roomsEl.addEventListener("click",e=>{const b=e.target.closest(".room");if(!b)return;setRoom(b.dataset.r)});
+function setRoom(r){room=r;roomsEl.querySelectorAll(".room").forEach(c=>c.setAttribute("aria-selected",c.dataset.r===r));try{history.replaceState(null,"",r==="all"?location.pathname:"#room-"+r)}catch(_){}render()}
+
+const chips=document.getElementById("chips");
+chips.addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;filt=b.dataset.k;render()});
+document.getElementById("q").addEventListener("input",e=>{q=e.target.value.trim();render()});
+
+function render(){
+ const base=inRoom();
+ document.getElementById("h-room").textContent=room==="all"?"ม.5 ทุกห้อง":rl(room);
+ document.getElementById("facts").innerHTML=
+  `<div class="fact"><b>${base.length}</b><small>ผลงานที่ส่ง</small></div>`+
+  `<div class="fact g"><b>${count(base,"Gemini")}</b><small>ใช้ Gemini</small></div>`+
+  `<div class="fact c"><b>${count(base,"ChatGPT")}</b><small>ใช้ ChatGPT</small></div>`+
+  `<div class="fact v"><b>${count(base,"Canva")}</b><small>ใช้ Canva</small></div>`+
+  `<div class="fact n"><b>${count(base,"none")}</b><small>ไม่ระบุเครื่องมือ</small></div>`;
+ chips.innerHTML=TOOLS.map(([k,l])=>`<button class="chip" type="button" data-k="${k}" aria-pressed="${k===filt}">${l} <i>${count(base,k)}</i></button>`).join("");
+ const qn=q.replace(/\D/g,"");
+ view=base.filter(w=>hasTool(w,filt)&&(!q||w.name.includes(q)||(qn&&String(w.no)===qn)||rl(w.r).includes(q)));
+ document.getElementById("grid").innerHTML=view.map((w,i)=>`
+  <article class="card">
+   <button class="open" type="button" data-i="${i}" aria-label="ดู Garden Board ของ ${w.name} ${rl(w.r)} เลขที่ ${w.no}">
+   <div class="mount">${w.img?`<img src="${w.img}" alt="Garden Board ของ ${w.name}" loading="lazy">`:`<div class="noimg">ยังแสดงภาพตัวอย่างไม่ได้<br>กดเพื่อเปิดไฟล์ต้นฉบับ</div>`}</div>
+   <div class="tag">
+    <div class="no">${w.no}</div>
+    <div class="who"><h3>${w.name}</h3><small>${rl(w.r)} เลขที่ ${w.no}</small></div>
+    <div class="tools">${w.tools.length?w.tools.map(t=>`<span class="tool t-${t}">${t}</span>`).join(""):`<span class="tool t-none">ไม่ระบุ</span>`}</div>
+   </div>
+   </button>
+   <div class="acts">
+    <button class="act" type="button" data-i="${i}">ดู Garden Board</button>
+    ${w.ans?`<a class="act ans" href="https://drive.google.com/file/d/${w.ans}/view" target="_blank" rel="noopener">ใบงานตอบคำถาม ↗</a>`:`<span class="act off">ไม่พบใบงานตอบคำถาม</span>`}
+   </div>
+  </article>`).join("");
+ document.getElementById("empty").style.display=view.length?"none":"block";
+}
+
+const lb=document.getElementById("lb"),stage=document.getElementById("lb-stage"),lbImg=document.getElementById("lb-img");
+let cur=0;
+function show(i){
+ cur=(i+view.length)%view.length;const w=view[cur];
+ lbImg.style.display=w.img?"":"none";if(w.img){lbImg.src=w.img;lbImg.alt="Garden Board ของ "+w.name}
+ document.getElementById("lb-title").innerHTML=`${w.name}<small>${rl(w.r)} เลขที่ ${w.no} · เครื่องมือ AI: ${toolLabel(w.tools)}</small>`;
+ document.getElementById("lb-src").href="https://drive.google.com/file/d/"+w.id+"/view";
+ const la=document.getElementById("lb-ans");la.style.display=w.ans?"":"none";if(w.ans)la.href="https://drive.google.com/file/d/"+w.ans+"/view";
+ document.getElementById("lb-count").textContent=`${cur+1} / ${view.length}`;
+ stage.classList.remove("zoom");stage.scrollTop=0;
+}
+document.getElementById("grid").addEventListener("click",e=>{const c=e.target.closest("button[data-i]");if(!c)return;show(+c.dataset.i);try{lb.showModal()}catch(_){lb.setAttribute("open","")}});
+document.getElementById("lb-close").onclick=()=>lb.close();
+document.getElementById("lb-prev").onclick=()=>show(cur-1);
+document.getElementById("lb-next").onclick=()=>show(cur+1);
+lbImg.onclick=()=>stage.classList.toggle("zoom");
+stage.addEventListener("click",e=>{if(e.target===stage)lb.close()});
+document.addEventListener("keydown",e=>{if(!lb.open)return;if(e.key==="ArrowRight")show(cur+1);if(e.key==="ArrowLeft")show(cur-1)});
+const fromHash=()=>{const m=location.hash.match(/^#room-(50[1-6])$/);setRoom(m?m[1]:"all")};
+window.addEventListener("hashchange",fromHash);fromHash();
+</script>
+</body>
+</html>
